@@ -14,14 +14,22 @@ def load_flight_data():
 
 
 def find_direct_flights(data, origin_city, destination_city):
-    """Find direct flights between two cities."""
+    """Find direct flights between two cities (in either direction)."""
     flights = []
     for index, row in data.iterrows():
         city1 = row['city1']
         city2 = row['city2']
         fare = row['fare']
         
+        # Check forward direction (city1 -> city2)
         if origin_city.lower() in city1.lower() and destination_city.lower() in city2.lower():
+            flights.append({
+                'from': city1,
+                'to': city2,
+                'fare': fare
+            })
+        # Check reverse direction (city2 -> city1)
+        elif destination_city.lower() in city1.lower() and origin_city.lower() in city2.lower():
             flights.append({
                 'from': city1,
                 'to': city2,
@@ -32,31 +40,63 @@ def find_direct_flights(data, origin_city, destination_city):
 
 
 def find_indirect_flights(data, origin_city, destination_city):
-    """Find indirect flights (one connection) between two cities."""
+    """Find indirect flights (one connection) between two cities (in either direction)."""
     flights = []
     
+    # First, find all flights from origin city
+    origin_flights = []
     for index1, row1 in data.iterrows():
         city1_leg1 = row1['city1']
         city2_leg1 = row1['city2']
         fare_leg1 = row1['fare']
         
-        if origin_city.lower() not in city1_leg1.lower():
-            continue
+        # Check forward: origin -> intermediate
+        if origin_city.lower() in city1_leg1.lower():
+            origin_flights.append({
+                'from': city1_leg1,
+                'to': city2_leg1,
+                'fare': fare_leg1,
+                'original_row': index1
+            })
+        # Check reverse: intermediate -> origin
+        elif origin_city.lower() in city2_leg1.lower():
+            origin_flights.append({
+                'from': city2_leg1,
+                'to': city1_leg1,
+                'fare': fare_leg1,
+                'original_row': index1
+            })
+    
+    # Then, find connecting flights to destination
+    for origin_flight in origin_flights:
+        intermediate = origin_flight['to']
         
         for index2, row2 in data.iterrows():
             city1_leg2 = row2['city1']
             city2_leg2 = row2['city2']
             fare_leg2 = row2['fare']
             
-            if city2_leg1.lower() in city1_leg2.lower() and destination_city.lower() in city2_leg2.lower():
+            # Check forward: intermediate -> destination
+            if intermediate.lower() in city1_leg2.lower() and destination_city.lower() in city2_leg2.lower():
                 flights.append({
-                    'leg1_from': city1_leg1,
-                    'leg1_to': city2_leg1,
-                    'leg1_fare': fare_leg1,
+                    'leg1_from': origin_flight['from'],
+                    'leg1_to': origin_flight['to'],
+                    'leg1_fare': origin_flight['fare'],
                     'leg2_from': city1_leg2,
                     'leg2_to': city2_leg2,
                     'leg2_fare': fare_leg2,
-                    'total_fare': fare_leg1 + fare_leg2
+                    'total_fare': origin_flight['fare'] + fare_leg2
+                })
+            # Check reverse: destination -> intermediate
+            elif destination_city.lower() in city1_leg2.lower() and intermediate.lower() in city2_leg2.lower():
+                flights.append({
+                    'leg1_from': origin_flight['from'],
+                    'leg1_to': origin_flight['to'],
+                    'leg1_fare': origin_flight['fare'],
+                    'leg2_from': city1_leg2,
+                    'leg2_to': city2_leg2,
+                    'leg2_fare': fare_leg2,
+                    'total_fare': origin_flight['fare'] + fare_leg2
                 })
     
     return flights
