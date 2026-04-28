@@ -38,7 +38,6 @@ with st.spinner("Loading flight data..."):
 
 # Sidebar configuration
 with st.sidebar:
-    st.markdown("---")
     st.markdown(
         """
         ### How to use:
