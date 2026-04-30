@@ -112,10 +112,11 @@ def build_direct_flight_graph(flights):
 def build_indirect_flight_graph(flights):
     G = nx.DiGraph()
     for flight in flights:
-        G.add_edge(flight['leg1_from'], flight['leg1_to'], weight=flight['leg1_fare'])
-        G.add_edge(flight['leg2_from'], flight['leg2_to'], weight=flight['leg2_fare'])
-        if not G.has_edge(flight['leg1_from'], flight['leg2_to']):
-            G.add_edge(flight['leg1_from'], flight['leg2_to'], weight=flight['total_fare'])
+        # Add leg edges with metadata to distinguish them
+        G.add_edge(flight['leg1_from'], flight['leg1_to'], 
+                   weight=flight['leg1_fare'], leg='leg1', fare=flight['leg1_fare'])
+        G.add_edge(flight['leg2_from'], flight['leg2_to'], 
+                   weight=flight['leg2_fare'], leg='leg2', fare=flight['leg2_fare'])
     return G
 
 
